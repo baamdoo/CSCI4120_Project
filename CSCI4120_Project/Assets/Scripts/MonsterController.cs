@@ -13,7 +13,7 @@ public class MonsterController : MonoBehaviour
     Animator _animator;
 
     [SerializeField]
-    float _scanRange = 10.0F;
+    float _scanRange = 5.0F;
     [SerializeField]
     float _attackRange = 2.0f;
     [SerializeField]
@@ -27,6 +27,13 @@ public class MonsterController : MonoBehaviour
     readonly int _stateHash = Animator.StringToHash("State");
 
     bool _reset;
+
+    bool _isAttacked = false;
+    public bool Attacked
+    {
+        get { return _isAttacked; }
+        set { _isAttacked = value; }
+    }
 
     Status _stat;
     GameObject _target;
@@ -48,7 +55,8 @@ public class MonsterController : MonoBehaviour
         _agent.destination = patrols[_idx].position;
         _stat = gameObject.GetComponent<Status>();
         // StartCoroutine("attackOrMove");
-        // _agent.isStopped = true;
+        if (gameObject.CompareTag("Boss"))
+            _agent.isStopped = true;
         State = PreDefine.State.Move;
     }
 
@@ -64,7 +72,7 @@ public class MonsterController : MonoBehaviour
 
         if (State == PreDefine.State.Move)
         {
-            if (isInRange(transform.position, enemy.transform.position))
+            if (isInRange(transform.position, enemy.transform.position) || Attacked)
             {
                 _agent.isStopped = true;
                 Debug.LogFormat("{0}: Player detected! from PATROL", gameObject.name);
@@ -205,5 +213,6 @@ public class MonsterController : MonoBehaviour
         yield return new WaitForSeconds(6f);
         State = PreDefine.State.Move;
         _agent.SetDestination(patrols[_idx].position);
+        Attacked = false;
     }
 }

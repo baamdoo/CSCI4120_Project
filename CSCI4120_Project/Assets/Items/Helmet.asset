@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e87e9d4a4b05ef54d936579d6b0f2d11, type: 3}
   m_Name: Helmet
   m_EditorClassIdentifier: 
-  name: Solid Helmet
+  name: Helmet
   sprite: {fileID: 21300000, guid: fd6e4fc32c78509458fc45ea4a478ba8, type: 3}
-  id: 0
+  id: 1

@@ -23,4 +23,25 @@ public class PreDefine
         Die,
         Dodge
     }
+
+    public enum DialogueStage
+    {
+        FirstBefore,    // 00
+        FirstAfter,     // 01
+        SecondBefore,   // 10
+        SecondAfter,    // 11
+        Finish
+    }
+
+    public enum ItemType
+    {
+        Potion,
+        Helmet,
+        Chest,
+        Pants,
+        Gloves,
+        Boots,
+        Cape,
+        Sword,
+    }
 }

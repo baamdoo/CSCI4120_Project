@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   name: Pants
   sprite: {fileID: 21300000, guid: b8fb302c5768e334ca82005f50e58121, type: 3}
-  id: 2
+  id: 3

@@ -6,8 +6,8 @@ using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
 {
+    #region Variables
     PreDefine.State _state = PreDefine.State.Idle;
-
     public PreDefine.State State
     {
         get { return _state; }
@@ -18,7 +18,6 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    CharacterController _controller;
     NavMeshAgent _agent;
     Camera _camera;
     [SerializeField]
@@ -28,10 +27,15 @@ public class PlayerController : MonoBehaviour
     public float groundCheckDist = 0.3f;
 
     readonly int _stateHash = Animator.StringToHash("State");
+    readonly int _fasterHash = Animator.StringToHash("Faster");
 
     [SerializeField]
     GameObject _inventory;
-    bool _open = false;
+    [SerializeField]
+    GameObject _equipment;
+    bool _added = false;
+    [SerializeField]
+    GameObject _sword;
 
     PlayerStatus _stat;
     LayerMask _mask;
@@ -46,15 +50,33 @@ public class PlayerController : MonoBehaviour
     FadeScript _fade;
     Vector3 _initPos = new Vector3(1.65f, 0, -5.0f);
 
+    bool _dodgeEnabled = false;
     bool _isAttack = false;
     bool _isDead = false;
     bool _isDodge = false;
+    bool _readyToTalk = false;
+    public bool ReadyToTalk
+    {
+        get { return _readyToTalk; }
+        set { _readyToTalk = value; }
+    }
+    bool _isTalking = false;
+    public bool Talking
+    {
+        get { return _isTalking; }
+        set { _isTalking = value; }
+    }
+
+    [SerializeField]
+    GameObject _dialogueManager;
+
+    bool _isComplete = false;
+    #endregion
 
     void Start()
     {
         _stat = gameObject.GetComponent<PlayerStatus>();
 
-        _controller = GetComponent<CharacterController>();
         _agent = GetComponent<NavMeshAgent>();
         _agent.updatePosition = false;
         _agent.updateRotation = true;
@@ -66,75 +88,94 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        if (!_isDead)
+        if (Talking || _isDead)
+            return;
+
+        SetMouseCursor();
+
+        if (Input.GetMouseButtonDown(0) && !_isDodge)
         {
-            SetMouseCursor();
+            if (UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
+                return;
 
-            if (Input.GetMouseButtonDown(0) && !_isDodge)
-            {
-                OnMouseLeftClicked();
-            }
+            OnMouseLeftClicked();
+        }
 
-            if (Input.GetMouseButtonDown(1))
-            {
-                OnMouseRightClicked();
-            }
+        if (Input.GetMouseButtonDown(1) && _dodgeEnabled)
+        {
+            if (UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
+                return;
 
-            if (!_isAttack)
+            OnMouseRightClicked();
+        }
+
+        if (!_isAttack)
+        {
+            if (_agent.remainingDistance > _agent.stoppingDistance)
             {
-                if (_agent.remainingDistance > _agent.stoppingDistance)
-                {
-                    _agent.Move(_agent.velocity * Time.deltaTime);
-                    if (_isDodge)
-                        State = PreDefine.State.Dodge;
-                    else
-                        State = PreDefine.State.Move;
-                }
+                _agent.Move(_agent.velocity * Time.deltaTime);
+                if (_isDodge)
+                    State = PreDefine.State.Dodge;
                 else
-                {
-                    _agent.Move(Vector3.zero);
-                    _agent.velocity = Vector3.zero;
-                    State = PreDefine.State.Idle;
-                    if (_isDodge)
-                    {
-                        _agent.speed = _stat.Speed;
-                        _isDodge = false;
-                    }
-                }
-
+                    State = PreDefine.State.Move;
             }
             else
             {
-                if (_agent.remainingDistance > _agent.stoppingDistance + _stat.Range)
+                _agent.Move(Vector3.zero);
+                _agent.velocity = Vector3.zero;
+                State = PreDefine.State.Idle;
+                if (_isDodge)
                 {
-                    _agent.Move(_agent.velocity * Time.deltaTime);
-                    State = PreDefine.State.Move;
-                }
-                else
-                {
-                    _agent.Move(Vector3.zero);
-                    _agent.velocity = Vector3.zero;
-                    State = PreDefine.State.Attack;
+                    _agent.speed = _stat.Speed;
+                    _isDodge = false;
                 }
             }
 
-            if (Input.GetKeyDown(KeyCode.I))
+        }
+        else
+        {
+            if (_agent.remainingDistance > _agent.stoppingDistance + _stat.Range)
             {
-                _open = !_open;
-                _inventory.SetActive(_open);
-
-                // string itemName = "Axe";
-                // _inventory.GetComponent<Inventory>().GetItem(itemName);
-                // _inventory.GetComponent<Inventory>().Add(item);
+                _agent.Move(_agent.velocity * Time.deltaTime);
+                State = PreDefine.State.Move;
             }
-
-            if (_stat.HP <= 0)
+            else
             {
-                _isDead = true;
-                State = PreDefine.State.Die;
-                _fade.Fade();
-                StartCoroutine(timeDuration());
+                _agent.Move(Vector3.zero);
+                _agent.velocity = Vector3.zero;
+                State = PreDefine.State.Attack;
             }
+        }
+
+        if (_stat.HP <= 0)
+        {
+            _isDead = true;
+            State = PreDefine.State.Die;
+            _fade.Fade();
+            StartCoroutine(timeDuration());
+        }
+
+        if (_dialogueManager.GetComponent<DialogueManager>().Stage == PreDefine.DialogueStage.SecondBefore)
+        {
+            if (!_added)
+            {
+                for (int i = 0; i <= (int)PreDefine.ItemType.Sword; i++)
+                    _inventory.GetComponent<Inventory>().Add(i);
+                _added = true;
+            }
+        }
+        else if (_dialogueManager.GetComponent<DialogueManager>().Stage == PreDefine.DialogueStage.Finish)
+        {
+            Debug.Log("Mission Complete!");
+        }
+
+        if (Input.GetKeyDown(KeyCode.I))
+        {
+            _inventory.SetActive(!_inventory.activeSelf);
+        }
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            _equipment.SetActive(!_equipment.activeSelf);
         }
     }
 
@@ -154,7 +195,7 @@ public class PlayerController : MonoBehaviour
     {
         Ray ray = _camera.ScreenPointToRay(Input.mousePosition);
         RaycastHit hit;
-        _mask = LayerMask.GetMask("Ground") | LayerMask.GetMask("Monster");
+        _mask = LayerMask.GetMask("Ground") | LayerMask.GetMask("Monster") | LayerMask.GetMask("NPC");
 
         if (Physics.Raycast(ray, out hit, 100, _mask))
         {
@@ -165,6 +206,7 @@ public class PlayerController : MonoBehaviour
                 _target = null;
 
                 _isAttack = false;
+                _readyToTalk = false;
             }
             else if (hit.collider.gameObject.layer == (int)PreDefine.Layer.Monster && hit.collider.gameObject.GetComponent<MonsterController>().State != PreDefine.State.Die)
             {
@@ -175,6 +217,14 @@ public class PlayerController : MonoBehaviour
                 transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.LookRotation(hit.point - transform.position), 90 * Time.deltaTime);
 
                 _isAttack = true;
+                _readyToTalk = false;
+            }
+            else if (hit.collider.gameObject.layer == (int)PreDefine.Layer.NPC)
+            {
+                Debug.Log("We hit monster!");
+                _agent.SetDestination(hit.point);
+
+                _readyToTalk = true;
             }
         }
     }
@@ -209,7 +259,7 @@ public class PlayerController : MonoBehaviour
 
         Ray ray = _camera.ScreenPointToRay(Input.mousePosition);
         RaycastHit hit;
-        _mask = LayerMask.GetMask("Ground") | LayerMask.GetMask("Monster");
+        _mask = LayerMask.GetMask("Ground") | LayerMask.GetMask("Monster") | LayerMask.GetMask("NPC") | LayerMask.GetMask("UI");
 
         if (Physics.Raycast(ray, out hit, 100, _mask))
         {
@@ -240,6 +290,7 @@ public class PlayerController : MonoBehaviour
 
             int damage = Mathf.Max(0, myStat.Attack - targetStat.Defence);
             targetStat.HP -= damage;
+            _target.GetComponent<MonsterController>().Attacked = true;
         }
 
         State = PreDefine.State.Idle;
@@ -255,5 +306,66 @@ public class PlayerController : MonoBehaviour
         State = PreDefine.State.Idle;
         gameObject.SetActive(true);
         _isDead = false;
+    }
+
+    public void EquipPlayer(int idx)
+    {
+        switch (idx)
+        {
+            case (int)PreDefine.ItemType.Helmet:
+                _stat.MaxHP += 100;
+                _stat.HP += 100;
+                break;
+            case (int)PreDefine.ItemType.Chest:
+                _stat.Defence += 5;
+                break;
+            case (int)PreDefine.ItemType.Pants:
+                _stat.Defence += 5;
+                break;
+            case (int)PreDefine.ItemType.Gloves:
+                _animator.SetBool(_fasterHash, true);
+                break;
+            case (int)PreDefine.ItemType.Boots:
+                _stat.Speed += 1.0f;
+                break;
+            case (int)PreDefine.ItemType.Cape:
+                _dodgeEnabled = true;
+                break;
+            case (int)PreDefine.ItemType.Sword:
+                _stat.Range += 1.0f;
+                _stat.Attack += 10;
+                _sword.SetActive(true);
+                break;
+        }
+    }
+    public void UnequipPlayer(int idx)
+    {
+        switch (idx)
+        {
+            case (int)PreDefine.ItemType.Helmet:
+                _stat.HP -= 100;
+                _stat.MaxHP -= 100;
+                break;
+            case (int)PreDefine.ItemType.Chest:
+                _stat.Defence -= 5;
+                break;
+            case (int)PreDefine.ItemType.Pants:
+                _stat.Defence -= 5;
+                break;
+            case (int)PreDefine.ItemType.Gloves:
+                _animator.SetBool(_fasterHash, false);
+                break;
+            case (int)PreDefine.ItemType.Boots:
+                _stat.Speed -= 1.0f;
+                break;
+            case (int)PreDefine.ItemType.Cape:
+                _dodgeEnabled = false;
+                break;
+            case (int)PreDefine.ItemType.Sword:
+                _stat.Range += 1.0f;
+                _stat.Attack += 10;
+                _sword.SetActive(false);
+                break;
+        }
     }
 }

@@ -1,27 +1,25 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 public class Inventory : MonoBehaviour
 {
     [SerializeField]
     Transform _box;
-    [SerializeField]
     Slot[] _slots;
 
     public List<Item> itemList;
-    private List<Item> _items;
+    private Item[] _items;
 
     private void OnValidate()
     {
         _slots = _box.GetComponentsInChildren<Slot>();
-        _items = new List<Item>();
+        _items = new Item[itemList.Count];
     }
 
     private void Awake()
     {
-        Add(itemList[8]);
+        Add((int)PreDefine.ItemType.Potion);
         Reload();
     }
 
@@ -29,24 +27,30 @@ public class Inventory : MonoBehaviour
     {
         for (int i = 0; i < _slots.Length; ++i)
         {
-            if (i < _items.Count)
-                _slots[i].item = _items[i];
+            if (i < _items.Length)
+                _slots[i].Item = _items[i];
             else
-                _slots[i].item = null;
+                _slots[i].Item = null;
         }
     }
 
-    public void Add(Item item)
+    public void Add(int idx)
     {
-        if (_items.Count >= _slots.Length)
+        if (_items.Length >= _slots.Length)
         {
             Debug.Log("Slot is full!");
             return;
         }
         else
         {
-            _items.Add(item);
+            _items[idx] = itemList[idx];
             Reload();
         }
+    }
+
+    public void Remove(int idx)
+    {
+        _items[idx] = null;
+        Reload();
     }
 }

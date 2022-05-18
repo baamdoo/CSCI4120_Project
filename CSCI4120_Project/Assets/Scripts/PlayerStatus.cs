@@ -23,6 +23,7 @@ public class PlayerStatus : Status
         _maxHP = 100;
         _ATT = 20;
         _DEF = 10;
-        _SP = 2.5f;
+        _SP = 2.0f;
+        _range = 0.5f;
     }
 }
