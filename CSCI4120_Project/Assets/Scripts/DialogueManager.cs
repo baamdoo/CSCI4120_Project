@@ -33,8 +33,6 @@ public class DialogueManager : MonoBehaviour
         set { _availQuest = value; }
     }
 
-    bool _proceding = false;
-
     void Start()
     {
         Stage = PreDefine.DialogueStage.FirstBefore;

@@ -5,7 +5,8 @@ using UnityEngine.UI;
 
 public class HPBar : MonoBehaviour
 {
-    public Camera camera;
+    [SerializeField]
+    Camera _camera;
     public Slider hpBar;
     
     Status _stat;
@@ -19,6 +20,6 @@ public class HPBar : MonoBehaviour
     {
         transform.position = transform.parent.transform.position + Vector3.up * (transform.parent.GetComponent<Collider>().bounds.size.y);
         hpBar.value = (float)_stat.HP / (float)_stat.MaxHP;
-        transform.rotation = camera.transform.rotation;
+        transform.rotation = _camera.transform.rotation;
     }
 }

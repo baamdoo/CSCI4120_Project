@@ -12,6 +12,7 @@ public class PreDefine
         Player = 10,
         Monster = 11,
         NPC = 12,
+        Boss = 13,
     }
 
     public enum State
@@ -21,7 +22,8 @@ public class PreDefine
         Attack,
         Chase,
         Die,
-        Dodge
+        Dodge,
+        Special,
     }
 
     public enum DialogueStage

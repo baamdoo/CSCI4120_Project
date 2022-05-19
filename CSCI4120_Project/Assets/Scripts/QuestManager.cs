@@ -64,7 +64,7 @@ public class QuestManager : MonoBehaviour
             if (_questpanel.activeSelf)
             {
                 uint cnt = 0;
-                if (_boss.GetComponent<MonsterController>().State == PreDefine.State.Die)
+                if (_boss.GetComponent<DragonController>().State == PreDefine.State.Die)
                     cnt++;
                 _script.text = "Kill the boss! (" + cnt.ToString() + " / 1)";
                 hunted = cnt;

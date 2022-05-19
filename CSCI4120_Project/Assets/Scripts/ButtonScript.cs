@@ -52,15 +52,4 @@ public class ButtonScript : MonoBehaviour
         _clicked = true;
         _type = ClickType.Close;
     }
-
-
-    bool _clickedForInventory = false;
-    public bool ClickedForInventory
-    {
-        get { return ClickedForInventory; }
-    }
-    public void OnClickSlot()
-    {
-        _clickedForInventory = true;
-    }
 }

@@ -5,15 +5,6 @@ using UnityEngine;
 public class CameraController : MonoBehaviour
 {
     [SerializeField]
-    float _height = 5f;
-    [SerializeField]
-    float _dist = 10f;
-    [SerializeField]
-    float _angle = 45f;
-    [SerializeField]
-    float _smoothedSpeed = 0.5f;
-
-    [SerializeField]
     Vector3 _offset = new Vector3(0.0f, 6.0f, -5.0f);
 
     public GameObject _target;

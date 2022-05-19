@@ -48,7 +48,6 @@ public class MonsterController : MonoBehaviour
         }
     }
 
-    // Start is called before the first frame update
     void Start()
     {
         _agent = GetComponent<NavMeshAgent>();
@@ -60,7 +59,6 @@ public class MonsterController : MonoBehaviour
         State = PreDefine.State.Move;
     }
 
-    // Update is called once per frame
     void Update()
     {
         GameObject enemy = GameObject.FindGameObjectWithTag("Player");
@@ -84,7 +82,7 @@ public class MonsterController : MonoBehaviour
                     State = PreDefine.State.Chase;
             }
 
-            if (!_agent.pathPending && _agent.remainingDistance < 0.1f)
+            else if (!_agent.pathPending && _agent.remainingDistance < 0.1f)
             {
                 _idx = (_idx + 1) % patrols.Length;
                 _agent.destination = patrols[_idx].position;

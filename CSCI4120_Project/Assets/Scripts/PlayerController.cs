@@ -7,6 +7,13 @@ using UnityEngine.UI;
 public class PlayerController : MonoBehaviour
 {
     #region Variables
+    struct Potion
+    {
+        public int cooldown;
+        public int capacity;
+    }
+    Potion _potion;
+
     PreDefine.State _state = PreDefine.State.Idle;
     public PreDefine.State State
     {
@@ -17,6 +24,13 @@ public class PlayerController : MonoBehaviour
             _animator.SetInteger(_stateHash, (int)_state);
         }
     }
+    PlayerStatus _stat;
+    public PlayerStatus PlayerStatus
+    {
+        get { return _stat; }
+    }
+    [SerializeField]
+    Text _playerStatus;
 
     NavMeshAgent _agent;
     Camera _camera;
@@ -37,7 +51,6 @@ public class PlayerController : MonoBehaviour
     [SerializeField]
     GameObject _sword;
 
-    PlayerStatus _stat;
     LayerMask _mask;
 
     [SerializeField]
@@ -50,6 +63,8 @@ public class PlayerController : MonoBehaviour
     FadeScript _fade;
     Vector3 _initPos = new Vector3(1.65f, 0, -5.0f);
 
+    int _dodgeCooldown = 1;
+    bool _fastAttack = false;
     bool _dodgeEnabled = false;
     bool _isAttack = false;
     bool _isDead = false;
@@ -69,8 +84,6 @@ public class PlayerController : MonoBehaviour
 
     [SerializeField]
     GameObject _dialogueManager;
-
-    bool _isComplete = false;
     #endregion
 
     void Start()
@@ -84,6 +97,11 @@ public class PlayerController : MonoBehaviour
         _camera = Camera.main;
 
         _fade = _gameover.GetComponent<FadeScript>();
+
+        _potion.cooldown = 10;
+        _potion.capacity = 20;
+
+        InvokeRepeating("ManageCooldown", 0f, 1f);
     }
 
     void Update()
@@ -101,7 +119,7 @@ public class PlayerController : MonoBehaviour
             OnMouseLeftClicked();
         }
 
-        if (Input.GetMouseButtonDown(1) && _dodgeEnabled)
+        if (Input.GetMouseButtonDown(1) && _dodgeEnabled && _dodgeCooldown == 0)
         {
             if (UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
                 return;
@@ -152,7 +170,7 @@ public class PlayerController : MonoBehaviour
             _isDead = true;
             State = PreDefine.State.Die;
             _fade.Fade();
-            StartCoroutine(timeDuration());
+            StartCoroutine(DelayTime());
         }
 
         if (_dialogueManager.GetComponent<DialogueManager>().Stage == PreDefine.DialogueStage.SecondBefore)
@@ -175,11 +193,24 @@ public class PlayerController : MonoBehaviour
         }
         if (Input.GetKeyDown(KeyCode.E))
         {
+            SetStatusText();
             _equipment.SetActive(!_equipment.activeSelf);
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha1) && _potion.cooldown == 0)
+        {
+            _stat.HP = Mathf.Min(_stat.MaxHP, _stat.HP + _potion.capacity);
+            _potion.cooldown = 10;
         }
     }
 
-    IEnumerator timeDuration()
+    void ManageCooldown()
+    {
+        _potion.cooldown = Mathf.Max(0, _potion.cooldown - 1);
+        _dodgeCooldown = Mathf.Max(0, _dodgeCooldown - 1);
+        SetStatusText();
+    }
+
+    IEnumerator DelayTime()
     {
         yield return new WaitForSeconds(5f);
         gameObject.SetActive(false);
@@ -208,7 +239,7 @@ public class PlayerController : MonoBehaviour
                 _isAttack = false;
                 _readyToTalk = false;
             }
-            else if (hit.collider.gameObject.layer == (int)PreDefine.Layer.Monster && hit.collider.gameObject.GetComponent<MonsterController>().State != PreDefine.State.Die)
+            else if (hit.collider.gameObject.layer == (int)PreDefine.Layer.Monster && hit.collider.gameObject.GetComponent<Animator>().GetInteger("State") != (int)PreDefine.State.Die)
             {
                 Debug.Log("We hit monster!");
                 _target = hit.collider.gameObject;
@@ -249,6 +280,7 @@ public class PlayerController : MonoBehaviour
 
             _isAttack = false;
             _isDodge = true;
+            _dodgeCooldown = 1;
         }
     }
 
@@ -290,10 +322,11 @@ public class PlayerController : MonoBehaviour
 
             int damage = Mathf.Max(0, myStat.Attack - targetStat.Defence);
             targetStat.HP -= damage;
-            _target.GetComponent<MonsterController>().Attacked = true;
+            if (_target.tag == "Monster")
+                _target.GetComponent<MonsterController>().Attacked = true;
+            else if (_target.tag == "Boss")
+                _target.GetComponent<DragonController>().Attacked = true;
         }
-
-        State = PreDefine.State.Idle;
         _isAttack = false;
 
         _agent.ResetPath();
@@ -317,13 +350,14 @@ public class PlayerController : MonoBehaviour
                 _stat.HP += 100;
                 break;
             case (int)PreDefine.ItemType.Chest:
-                _stat.Defence += 5;
+                _stat.Defence += 10;
                 break;
             case (int)PreDefine.ItemType.Pants:
-                _stat.Defence += 5;
+                _stat.Defence += 10;
                 break;
             case (int)PreDefine.ItemType.Gloves:
                 _animator.SetBool(_fasterHash, true);
+                _fastAttack = true;
                 break;
             case (int)PreDefine.ItemType.Boots:
                 _stat.Speed += 1.0f;
@@ -333,10 +367,11 @@ public class PlayerController : MonoBehaviour
                 break;
             case (int)PreDefine.ItemType.Sword:
                 _stat.Range += 1.0f;
-                _stat.Attack += 10;
+                _stat.Attack += 30;
                 _sword.SetActive(true);
                 break;
         }
+        SetStatusText();
     }
     public void UnequipPlayer(int idx)
     {
@@ -347,13 +382,14 @@ public class PlayerController : MonoBehaviour
                 _stat.MaxHP -= 100;
                 break;
             case (int)PreDefine.ItemType.Chest:
-                _stat.Defence -= 5;
+                _stat.Defence -= 10;
                 break;
             case (int)PreDefine.ItemType.Pants:
-                _stat.Defence -= 5;
+                _stat.Defence -= 10;
                 break;
             case (int)PreDefine.ItemType.Gloves:
                 _animator.SetBool(_fasterHash, false);
+                _fastAttack = false;
                 break;
             case (int)PreDefine.ItemType.Boots:
                 _stat.Speed -= 1.0f;
@@ -362,10 +398,32 @@ public class PlayerController : MonoBehaviour
                 _dodgeEnabled = false;
                 break;
             case (int)PreDefine.ItemType.Sword:
-                _stat.Range += 1.0f;
-                _stat.Attack += 10;
+                _stat.Range -= 1.0f;
+                _stat.Attack -= 30;
                 _sword.SetActive(false);
                 break;
         }
+        SetStatusText();
+    }
+
+    private void SetStatusText()
+    {
+        string text = "  Player Status \n\n\t";
+        text += "HP: " + _stat.MaxHP.ToString() + "\n\t";
+        text += "ATT: " + _stat.Attack.ToString() + "\n\t";
+        text += "DEF: " + _stat.Defence.ToString() + "\n\t";
+        text += "Speed: " + _stat.Speed.ToString() + "\n\t";
+        if (_fastAttack)
+            text += "ATT Speed: Fast\n\t";
+        else
+            text += "ATT Speed: Slow\n\t";
+        if (_dodgeEnabled)
+            text += "Skill: Dodge\n\t";
+        else
+            text += "Skill: None\n\t";
+        text += "ATT Range: " + _stat.Range.ToString() + "\n\t";
+        text += "Potion cooldown: " + _potion.cooldown.ToString();
+
+        _playerStatus.text = text;
     }
 }
