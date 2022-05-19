@@ -20,6 +20,7 @@ public class DragonController : MonoBehaviour
     float _scanDegree = 60.0f;
     public float rotationDamping = 6.0f;
     public float shootForce;
+    private bool statChange = true;
 
     private NavMeshAgent _agent;
     
@@ -100,6 +101,11 @@ public class DragonController : MonoBehaviour
                 _agent.isStopped = true;
                 if (_stat.HP < _stat.MaxHP / 2)
                 {
+                    if (statChange)
+                    {
+                        statChange = false;
+                        _attackRange = 6;
+                    }
                     State = PreDefine.State.Special;
                 }
                 else
