@@ -26,11 +26,14 @@ public class Status : MonoBehaviour
 
     private void Start()
     {
-        _LEV = 1;
-        _HP = 1;
-        _maxHP = 1;
-        _ATT = 20;
-        _DEF = 5;
-        _SP = 1f;
+        if (this.gameObject.tag == "Player")
+        {
+            _LEV = 1;
+            _HP = 100;
+            _maxHP = 100;
+            _ATT = 10;
+            _DEF = 10;
+            _SP = 1.0f;
+        }
     }
 }

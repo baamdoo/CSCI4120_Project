@@ -206,9 +206,9 @@ public class PlayerController : MonoBehaviour
                 _target = null;
 
                 _isAttack = false;
-                _readyToTalk = false;
+                _readyToTalk = false;   
             }
-            else if (hit.collider.gameObject.layer == (int)PreDefine.Layer.Monster && hit.collider.gameObject.GetComponent<MonsterController>().State != PreDefine.State.Die)
+            else if (hit.collider.gameObject.layer == (int)PreDefine.Layer.Monster && hit.collider.gameObject.GetComponent<Animator>().GetInteger("State") != (int) PreDefine.State.Die)
             {
                 Debug.Log("We hit monster!");
                 _target = hit.collider.gameObject;
@@ -290,7 +290,13 @@ public class PlayerController : MonoBehaviour
 
             int damage = Mathf.Max(0, myStat.Attack - targetStat.Defence);
             targetStat.HP -= damage;
-            _target.GetComponent<MonsterController>().Attacked = true;
+            if (_target.GetComponent<MonsterController>() != null)
+            {
+                _target.GetComponent<MonsterController>().Attacked = true;
+            }else if(_target.GetComponent<DragonController>() != null)
+            {
+                _target.GetComponent<DragonController>().Attacked = true;
+            }
         }
 
         State = PreDefine.State.Idle;

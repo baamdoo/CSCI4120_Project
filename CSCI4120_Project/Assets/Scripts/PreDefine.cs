@@ -21,7 +21,8 @@ public class PreDefine
         Attack,
         Chase,
         Die,
-        Dodge
+        Dodge,
+        Special
     }
 
     public enum DialogueStage
